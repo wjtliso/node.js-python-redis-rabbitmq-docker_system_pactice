@@ -1,0 +1,48 @@
+version: "2"
+
+services:
+  webserver:
+    build: ./webserver/
+    ports: 
+      - "3000:3000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - QUEUE_NAME=image_queue
+    links:
+      - rabbitmq
+      - redis
+    volumes:
+      - imagestorage:/images
+
+  redis:
+    image: redis
+    ports: 
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  worker:
+    build: ./worker/
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - SAVE_PATH=/images
+      - QUEUE_NAME=image_queue
+    links:
+      - redis
+      - rabbitmq
+    volumes:
+      - imagestorage:/images
+
+volumes:
+  imagestorage:
+    driver: 'local'
